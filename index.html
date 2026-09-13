@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%2304050c%27/%3E%3Ccircle cx=%2724%27 cy=%2726%27 r=%277%27 fill=%27%235b9dff%27/%3E%3Ccircle cx=%2742%27 cy=%2738%27 r=%275%27 fill=%27%23ff5b6e%27/%3E%3Ccircle cx=%2746%27 cy=%2720%27 r=%274%27 fill=%27%23ffd27a%27/%3E%3C/svg%3E">
+<title>Ian M. Pendleton</title>
+<meta name="description" content="Ian M. Pendleton, Ph.D. — Associate Principal Scientist, Cheminformatics &amp; AI Design at Alkermes. Machine learning, virtual screening, and laboratory automation for drug discovery.">
+<meta property="og:title" content="Ian M. Pendleton">
+<meta property="og:description" content="Designing new medicines faster through closed-loop experimentation under human supervision.">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="./">Pendletonian</a>
+  <ul>
+    <li><a href="cv/">CV</a></li>
+    <li><a href="presentations/">Talks</a></li>
+    <li><a href="chemical-space/">Chemical Space</a></li>
+  </ul>
+</nav>
+
+<header class="hero" id="hero">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="hero-text">
+    <div class="eyebrow">Cheminformatics · AI Design · Chemistry</div>
+    <h1>Ian M. Pendleton</h1>
+    <p class="tagline">Faster paths to new medicines, where patients have few or none.</p>
+    <p>Closing the loop between design, synthesis, and data, with chemists steering.</p>
+    <div class="cta">
+      <a class="btn primary" href="chemical-space/">Explore chemical space</a>
+      <a class="btn" href="cv/">Curriculum vitae</a>
+    </div>
+  </div>
+</header>
+
+<section class="band">
+  <div class="split">
+    <div>
+      <div class="eyebrow">Who am I?</div>
+      <h2>A Michigander in New England, searching chemical space and granite.</h2>
+      <p class="lede">I'm an Associate Principal Scientist in Cheminformatics &amp; AI Design at Alkermes.</p>
+      <p style="margin-top:18px">I couple medicinal chemistry judgment with machine learning, ultra-large virtual screening, and laboratory automation so that each experiment trains the next design cycle. Before Alkermes I ran direct-to-assay library synthesis at Relay Therapeutics, built reaction prediction and Bayesian optimization tools at Vertex, and developed data pipelines for robotic materials discovery at Haverford College.</p>
+    </div>
+    <figure class="photo">
+      <img src="assets/indian-creek.jpg" alt="Ian crack climbing a red sandstone wall above the desert at Indian Creek, Utah" loading="lazy" onerror="this.closest('figure').hidden=true">
+      <figcaption>Crack climbing · Indian Creek, UT</figcaption>
+    </figure>
+  </div>
+
+  <div class="about">
+    <p>Originally from Michigan, I now live in the greater Boston area. Most free days find me climbing somewhere in New England, out on a bike, or on a trail, with the occasional trip somewhere farther afield for an adventure that doesn't fit in a weekend. I love the stories and history behind the places we climb, and the shared work of caring for them.</p>
+    <p>I also volunteer with local Scout troops on outdoor adventures, which is the best reminder I know that people grow by doing hard things together.</p>
+    <p>Off the wall, I'm usually deep in a good book or turning over questions from philosophy of mind: what consciousness is, how attention shapes a life, and how ideas have evolved over centuries of people asking the same questions. The thread through all of it is community, and building places where people show up for one another and connect a little more deeply.</p>
+  </div>
+
+  <div class="duo" aria-label="Lab and life, side by side">
+    <div class="duo-head"><span>In the lab</span><span>Out of it</span></div>
+    <div class="duo-row"><span>Searches billions of molecules for the next lead</span><span>Searches New England granite for the next hold</span></div>
+    <div class="duo-row"><span>Builds AI agents that help chemists find their way</span><span>Helps Scout troops find their way outdoors</span></div>
+    <div class="duo-row"><span>Treats every failed experiment as data</span><span>Treats every fall the same way</span></div>
+    <div class="duo-row"><span>Thinks hard about models of molecules</span><span>Thinks hard about models of the mind</span></div>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="chemical-space/">
+      <div class="k">Interactive</div>
+      <h4>Chemical Space</h4>
+      <p>Animated and explorable visualizations of how searches move through vast molecular libraries.</p>
+    </a>
+    <a class="card" href="cv/">
+      <div class="k">Background</div>
+      <h4>Curriculum Vitae</h4>
+      <p>Experience, skills, publications, and awards.</p>
+    </a>
+    <a class="card" href="presentations/">
+      <div class="k">Talks</div>
+      <h4>Presentations</h4>
+      <p>Conference and symposium talks from 2010 onward.</p>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <span>© Ian M. Pendleton</span>
+  <span>
+    <a href="https://scholar.google.com/citations?user=63UWg_MAAAAJ&amp;hl=en">Google Scholar</a> ·
+    <a href="https://orcid.org/0000-0002-4394-3223">ORCID</a> ·
+    <a href="https://github.com/ipendlet">GitHub</a>
+  </span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Lightweight constellation hero: a slowly rotating field with three glowing families.
+(() => {
+  const canvas = document.getElementById('sky');
+  const hero = document.getElementById('hero');
+  if (!window.THREE) return;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+  catch (e) { return; } // no WebGL: CSS gradient remains
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const small = innerWidth < 700;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 5000);
+  camera.position.set(0, 40, 720);
+
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(.25, 'rgba(255,255,255,.85)');
+  grd.addColorStop(.55, 'rgba(255,255,255,.25)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  const sprite = new THREE.CanvasTexture(c);
+
+  let seed = 20260913;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
+  const group = new THREE.Group(); scene.add(group);
+
+  function cloud(n, place, color, size, opacity) {
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const p = place(); pos[i*3] = p[0]; pos[i*3+1] = p[1]; pos[i*3+2] = p[2]; }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ size, map: sprite, color, transparent: true, opacity,
+      depthWrite: false, blending: THREE.AdditiveBlending });
+    group.add(new THREE.Points(geo, mat)); return mat;
+  }
+  const shell = r => { const u = rnd()*2-1, t = rnd()*Math.PI*2, s = Math.sqrt(1-u*u), rr = r*(.45+.55*Math.cbrt(rnd()));
+    return [s*Math.cos(t)*rr, u*rr*.8, s*Math.sin(t)*rr]; };
+  const blob = (cx, cy, cz, r) => () => [cx + gauss()*r, cy + gauss()*r, cz + gauss()*r];
+
+  const scale = small ? .5 : 1;
+  cloud(Math.round(4200*scale), () => shell(340), 0xc9d6ff, 3.6, .85);
+  cloud(Math.round(1600*scale), () => shell(900), 0x5a6aa0, 1.8, .55);
+  const fams = [
+    cloud(Math.round(260*scale), blob(-150, 60, 40, 70), 0x5b9dff, 6, .9),
+    cloud(Math.round(340*scale), blob(110, -40, 100, 48), 0xff5b6e, 5, .9),
+    cloud(Math.round(110*scale), blob(210, -100, 150, 20), 0x4dffa3, 6, .95),
+  ];
+
+  // offset the field so the name has room on the left
+  group.position.x = small ? 0 : 160;
+
+  function resize() {
+    const w = hero.clientWidth, h = hero.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h;
+    camera.position.z = camera.aspect < 1 ? 720 / Math.max(camera.aspect, .45) * .75 : 720; // keep families in frame on portrait screens
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(hero); resize();
+
+  let visible = false, running = false;
+  const t0 = performance.now();
+
+  function draw(now) {
+    const t = (now - t0) / 1000;
+    group.rotation.y = t * .035;
+    group.rotation.x = .18 + Math.sin(t * .1) * .04;
+    fams.forEach((m, i) => m.opacity = .7 + .25 * Math.sin(t * .8 + i * 2));
+    renderer.render(scene, camera);
+  }
+  // single animation loop; pauses while the hero is scrolled out of view
+  function tick(now) {
+    if (!visible) { running = false; return; }
+    draw(now); requestAnimationFrame(tick);
+  }
+
+  if (reduceMotion) {
+    draw(t0 + 4000);
+    new ResizeObserver(() => draw(t0 + 4000)).observe(hero);
+  } else {
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible && !running) { running = true; requestAnimationFrame(tick); }
+    }).observe(hero);
+  }
+})();
+</script>
+</body>
+</html>

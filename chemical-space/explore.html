@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%2304050c%27/%3E%3Ccircle cx=%2724%27 cy=%2726%27 r=%277%27 fill=%27%235b9dff%27/%3E%3Ccircle cx=%2742%27 cy=%2738%27 r=%275%27 fill=%27%23ff5b6e%27/%3E%3Ccircle cx=%2746%27 cy=%2720%27 r=%274%27 fill=%27%23ffd27a%27/%3E%3C/svg%3E">
+<title>An Exploration — Chemical Space</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04050c; --ink:#eaf0ff; --dim:#7f8db0;
+    --gold:#ffd27a; --cyan:#7ad0ff; --line:rgba(150,170,220,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);overflow:hidden;color:var(--ink)}
+  #stage{position:fixed;inset:0;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #grain{position:absolute;inset:0;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  #vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 47%,transparent 52%,rgba(0,0,0,.6) 100%);}
+  .overlay{position:absolute;inset:0;pointer-events:none}
+
+  .brand{position:absolute;top:26px;left:30px;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.32em;color:var(--dim);text-transform:uppercase}
+  .brand b{color:var(--ink);font-weight:500}
+  .brand .v{color:rgba(127,141,176,.5)}
+  .brand .tick{display:block;margin-top:6px;font-size:10px;letter-spacing:.18em;color:rgba(127,141,176,.55)}
+
+  .caption{position:absolute;left:30px;right:30px;bottom:96px;max-width:680px;
+    transition:opacity .9s ease, transform .9s ease;opacity:0;transform:translateY(14px)}
+  .caption.show{opacity:1;transform:none}
+  .caption .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  .caption h1{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(30px,5.2vw,60px);
+    line-height:1.03;letter-spacing:-.01em}
+  .caption h1 em{font-style:italic;color:#cdd9ff}
+  .caption p{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-weight:300;
+    font-size:clamp(12px,1.5vw,15px);line-height:1.7;color:var(--dim);max-width:48ch}
+
+  .counter{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    text-align:center;transition:opacity .8s ease;opacity:0}
+  .counter.show{opacity:1}
+  .counter .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:16px}
+  .counter .big{font-family:'IBM Plex Mono',monospace;font-weight:300;
+    font-size:clamp(38px,8vw,92px);line-height:.9;color:var(--ink);letter-spacing:.01em;
+    font-variant-numeric:tabular-nums}
+  .counter .unit{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(14px,2vw,22px);
+    color:var(--gold);margin-top:14px}
+
+  .legend{position:absolute;top:50%;right:34px;transform:translateY(-50%);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;
+    opacity:0;transition:opacity .7s ease;text-align:right}
+  .legend.show{opacity:1}
+  .legend div{margin:7px 0;color:var(--dim);display:flex;align-items:center;justify-content:flex-end;gap:9px}
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  .controls{position:absolute;left:0;right:0;bottom:30px;display:flex;justify-content:center;
+    align-items:center;gap:22px;pointer-events:auto}
+  .dots{display:flex;gap:11px}
+  .dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);
+    background:transparent;cursor:pointer;padding:0;transition:all .35s ease}
+  .dot.active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 12px rgba(255,210,122,.6)}
+  .dot:hover{border-color:#aab6dd}
+  .replay{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--dim);background:none;border:1px solid var(--line);
+    padding:8px 16px;border-radius:999px;cursor:pointer;transition:all .3s ease}
+  .replay:hover{color:var(--ink);border-color:#aab6dd}
+  .progress{position:absolute;left:0;bottom:0;height:2px;width:0%;
+    background:linear-gradient(90deg,#5e7cff,var(--gold));box-shadow:0 0 10px rgba(120,150,255,.5)}
+</style>
+</head>
+<body>
+<a href="./" style="position:fixed;top:72px;left:26px;z-index:40;font:11px/1 'IBM Plex Mono','Space Mono',monospace;letter-spacing:.25em;text-transform:uppercase;color:rgba(180,195,255,.6);text-decoration:none;border:1px solid rgba(150,170,220,.2);padding:8px 14px;border-radius:999px;background:rgba(4,5,12,.5)">← pendletonian.com</a>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="vig"></div>
+  <div id="grain"></div>
+
+  <div class="overlay">
+    <div class="brand"><b>CHEMICAL SPACE</b> / an exploration <span class="v">v1.2</span><span class="tick" id="tick">enumerating…</span></div>
+
+    <div class="counter" id="counter">
+      <div class="cap">Available Chemical Space</div>
+      <div class="big" id="bignum">0</div>
+      <div class="unit">and counting — a make-on-demand universe</div>
+    </div>
+
+    <div class="legend" id="legend">
+      <div><span>search A</span><i style="background:#ffd27a"></i></div>
+      <div><span>search B</span><i style="background:#7ad0ff"></i></div>
+      <div><span>converged</span><i style="background:#fff2d0"></i></div>
+    </div>
+
+    <div class="caption" id="caption">
+      <div class="eyebrow" id="eyebrow">01 — scale</div>
+      <h1 id="headline">Tens of billions of molecules.</h1>
+      <p id="subtext">A make-on-demand universe of synthesizable compounds — far too many to screen one by one.</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="dots" id="dots"></div>
+    <button class="replay" id="replay">↻ replay</button>
+  </div>
+  <div class="progress" id="bar"></div>
+</div>
+
+<script>
+(() => {
+  const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+  let W=0,H=0,DPR=1;
+
+  // ---- deterministic RNG ----
+  let _s=20260526;
+  const rnd=()=>{_s=(_s*1664525+1013904223)>>>0;return _s/4294967296;};
+  const rs=()=>rnd()*2-1;
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+  const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const easeOut=t=>1-Math.pow(1-t,3);
+
+  // ---- plasma colormap (property coloring) ----
+  const stops=[[13,8,135],[126,3,168],[204,71,120],[237,121,83],[244,210,80]];
+  function plasma(t){t=clamp(t,0,1)*(stops.length-1);const i=Math.floor(t),f=t-i;
+    const a=stops[i],b=stops[Math.min(i+1,stops.length-1)];
+    return [Math.round(lerp(a[0],b[0],f)),Math.round(lerp(a[1],b[1],f)),Math.round(lerp(a[2],b[2],f))];}
+
+  // ---- crisp glow sprites ----
+  const SP=48;
+  function glow(r,g,b){
+    const o=document.createElement('canvas');o.width=o.height=SP;const x=o.getContext('2d');
+    const gr=x.createRadialGradient(SP/2,SP/2,0,SP/2,SP/2,SP/2);
+    gr.addColorStop(0,`rgba(${r},${g},${b},.95)`);
+    gr.addColorStop(.16,`rgba(${r},${g},${b},.42)`);
+    gr.addColorStop(.42,`rgba(${r},${g},${b},.07)`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    x.fillStyle=gr;x.fillRect(0,0,SP,SP);return o;
+  }
+  const HUES=40, hueSprites=[];
+  for(let i=0;i<HUES;i++){const c=plasma(i/(HUES-1));hueSprites.push(glow(c[0],c[1],c[2]));}
+  const coolSprite=glow(112,144,220);
+  const goldSprite=glow(255,210,122);
+  const cyanSprite=glow(122,208,255);
+  const whiteSprite=glow(255,242,210);
+
+  // ---- 3D world: clusters ----
+  const MAXR=520, NC=16, clusters=[];
+  for(let i=0;i<NC;i++){
+    // random direction on sphere
+    const u=rnd()*2-1, th=rnd()*Math.PI*2, s=Math.sqrt(1-u*u);
+    const rad=(0.42+0.55*rnd())*MAXR;
+    clusters.push({
+      x:s*Math.cos(th)*rad, y:u*rad*0.8, z:s*Math.sin(th)*rad,
+      r:46+rnd()*70, prop:rnd(), w:0.4+rnd()*1.0
+    });
+  }
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+  // pick A, B, C maximally separated
+  let A=clusters[0],B=clusters[1];
+  let best=-1; clusters.forEach(p=>clusters.forEach(q=>{const d=dist(p,q); if(d>best){best=d;A=p;B=q;}}));
+  let C=clusters[0],bc=-1;
+  clusters.forEach(p=>{ if(p===A||p===B)return; const d=Math.min(dist(p,A),dist(p,B)); if(d>bc){bc=d;C=p;}});
+  A.r=Math.max(A.r,70); B.r=Math.max(B.r,70); C.r=Math.max(C.r,80);
+
+  // ---- points ----
+  const N=8000, pts=[];
+  let totW=0; clusters.forEach(c=>totW+=c.w);
+  for(let i=0;i<N;i++){
+    let pick=rnd()*totW,ci=0; for(;ci<NC;ci++){pick-=clusters[ci].w; if(pick<=0)break;}
+    const cl=clusters[Math.min(ci,NC-1)];
+    // home: gaussian-ish around cluster center
+    const g=()=>(rnd()+rnd()+rnd()-1.5)/1.5;
+    const hx=cl.x+g()*cl.r, hy=cl.y+g()*cl.r, hz=cl.z+g()*cl.r;
+    // scattered: fluffy sphere
+    const u=rnd()*2-1, th=rnd()*Math.PI*2, s=Math.sqrt(1-u*u), rr=Math.pow(rnd(),0.5)*720;
+    pts.push({
+      hx,hy,hz,
+      sx:s*Math.cos(th)*rr, sy:u*rr*0.75, sz:s*Math.sin(th)*rr,
+      cl, prop:clamp(cl.prop+rs()*0.18,0,1),
+      spawn:rnd(), tw:rnd()*Math.PI*2, base:0.30+rnd()*0.30, sz0:0.7+rnd()*0.8
+    });
+  }
+  pts.forEach(p=>p.sprite=hueSprites[Math.min(HUES-1,Math.floor(p.prop*HUES))]);
+
+  // ---- search chains (world-space nodes) ----
+  function norm(v){const m=Math.hypot(v.x,v.y,v.z)||1;return{x:v.x/m,y:v.y/m,z:v.z/m};}
+  const conv={ x:lerp(A.x,B.x,0.5)*0.55, y:lerp(A.y,B.y,0.5)*0.55, z:lerp(A.z,B.z,0.5)*0.55 };
+  // wandering search path: mostly random walk with a slight drift toward `toward`
+  function searchChain(center,toward,n,step,jit){
+    const bias=norm({x:toward.x-center.x,y:toward.y-center.y,z:toward.z-center.z});
+    let dir={...bias};
+    let cur={x:center.x+rs()*18,y:center.y+rs()*18,z:center.z+rs()*18};
+    const nodes=[{...cur}];
+    for(let i=1;i<n;i++){
+      const rv=norm({x:rs(),y:rs(),z:rs()});
+      dir=norm({x:dir.x*0.5+rv.x*0.42+bias.x*0.18,
+                y:dir.y*0.5+rv.y*0.42+bias.y*0.18,
+                z:dir.z*0.5+rv.z*0.42+bias.z*0.18});
+      cur={x:cur.x+dir.x*step+rs()*jit*0.3,y:cur.y+dir.y*step+rs()*jit*0.3,z:cur.z+dir.z*step+rs()*jit*0.3};
+      nodes.push({...cur});
+    }
+    return nodes;
+  }
+  const lineA=searchChain(A,conv,9,A.r*0.62,A.r*0.5);   // more jumps — the emphasised first search
+  const lineB=searchChain(B,conv,6,B.r*0.62,B.r*0.5);
+  const lineAc=lineA.reduce((a,p)=>({x:a.x+p.x/lineA.length,y:a.y+p.y/lineA.length,z:a.z+p.z/lineA.length}),{x:0,y:0,z:0});
+  // merged path from conv toward C
+  const mergedToC=(()=>{
+    const dir=norm({x:C.x-conv.x,y:C.y-conv.y,z:C.z-conv.z});
+    const steps=5, step=dist(conv,C)/steps;
+    const nodes=[{...conv}]; let cur={...conv};
+    for(let i=0;i<steps;i++){cur={x:cur.x+dir.x*step+rs()*40,y:cur.y+dir.y*step+rs()*40,z:cur.z+dir.z*step+rs()*40};nodes.push({...cur});}
+    nodes[nodes.length-1]={x:C.x+rs()*20,y:C.y+rs()*20,z:C.z+rs()*20};
+    return nodes;
+  })();
+  const aFrontier=lineA[lineA.length-1], bFrontier=lineB[lineB.length-1];
+
+  // ---- background stars ----
+  const stars=[]; for(let i=0;i<110;i++)stars.push({x:rnd(),y:rnd(),a:rnd()*.4+.08,s:rnd()*1.2+.3,tw:rnd()*Math.PI*2});
+
+  // ---- timeline ----
+  const ACTS=[
+    {n:'scale',   t0:0.0,  t1:13.0},
+    {n:'space',   t0:13.0, t1:21.0},
+    {n:'cluster', t0:21.0, t1:33.0},
+    {n:'searchA', t0:33.0, t1:49.0},
+    {n:'searchB', t0:49.0, t1:59.0},
+    {n:'converge',t0:59.0, t1:74.0}
+  ];
+  const DUR=ACTS[ACTS.length-1].t1;
+  const caps=[
+    {eb:'01 — scale', h:'Tens of billions of molecules.', s:'A make-on-demand universe of synthesizable compounds — far too many to screen one by one.'},
+    {eb:'02 — a space', h:'Not a list — a <em>space</em>.', s:'Each molecule is a point. Together they form a structured landscape we can move through.'},
+    {eb:'03 — families', h:'Order emerges.', s:'Arranged by structural similarity, the points settle into families of related chemistry.'},
+    {eb:'04 — first search', h:'A search begins.', s:'One trajectory threads through a promising family, one step at a time.'},
+    {eb:'05 — a second front', h:'A second front.', s:'An independent search advances through a different family entirely.'},
+    {eb:'06 — convergence', h:'Two paths <em>converge</em>.', s:'The trajectories meet, merge, and strike out together toward unexplored territory.'}
+  ];
+  const ticks=['enumerating…','surveying…','clustering…','search · A','search · A + B','converged →'];
+
+  // ---- overlay refs ----
+  const dotsEl=document.getElementById('dots');
+  const dotEls=ACTS.map((a,i)=>{const b=document.createElement('button');b.className='dot';
+    b.onclick=()=>{startT=performance.now()-ACTS[i].t0*1000;};
+    dotsEl.appendChild(b);return b;});
+  const capEl=document.getElementById('caption'),ebEl=document.getElementById('eyebrow'),
+    hEl=document.getElementById('headline'),sEl=document.getElementById('subtext'),
+    counterEl=document.getElementById('counter'),bignumEl=document.getElementById('bignum'),
+    legendEl=document.getElementById('legend'),tickEl=document.getElementById('tick'),
+    barEl=document.getElementById('bar');
+  let curAct=-1;
+  function setAct(i){
+    if(i===curAct)return; curAct=i;
+    const c=caps[i]; capEl.classList.remove('show');
+    setTimeout(()=>{ebEl.textContent=c.eb;hEl.innerHTML=c.h;sEl.innerHTML=c.s;capEl.classList.add('show');},240);
+    dotEls.forEach((d,k)=>d.classList.toggle('active',k===i));
+    tickEl.textContent=ticks[i];
+  }
+
+  // ---- resize ----
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;
+    cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+  new ResizeObserver(resize).observe(cv);resize();
+
+  // ---- camera / projection ----
+  const CAM_D=2200, ORIGIN={x:0,y:0,z:0};
+  let yaw=0,pit=0,zoom=1,cosY=1,sinY=0,cosP=1,sinP=0,panX=0,panY=0,pscale=1,lscale=1;
+  function rawProject(p){
+    const x1=p.x*cosY+p.z*sinY, z1=-p.x*sinY+p.z*cosY, y1=p.y;
+    const y2=y1*cosP-z1*sinP, z2=y1*sinP+z1*cosP;
+    const persp=CAM_D/(CAM_D-z2);
+    return {sx:W/2+x1*persp*zoom, sy:H/2+y2*persp*zoom, persp, z:z2};
+  }
+  function project(p){const r=rawProject(p);r.sx+=panX;r.sy+=panY;return r;}
+
+  // ---- line drawing helpers ----
+  function nodeAt(nodes,fidx){ // interpolated world node at fractional index
+    const i=Math.floor(fidx),f=fidx-i;
+    if(i>=nodes.length-1)return nodes[nodes.length-1];
+    const a=nodes[i],b=nodes[i+1];
+    return {x:lerp(a.x,b.x,f),y:lerp(a.y,b.y,f),z:lerp(a.z,b.z,f)};
+  }
+  function drawSeg(aw,bw,rgb,wmul){
+    const a=project(aw),b=project(bw);
+    ctx.strokeStyle=`rgba(${rgb},0.6)`;
+    ctx.lineWidth=Math.max(1,1.7*((a.persp+b.persp)/2)*wmul*lscale);
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();
+  }
+  function drawNode(w,rgb,spr,sz){
+    const p=project(w); const g=sz*p.persp*lscale;
+    ctx.drawImage(spr,p.sx-g/2,p.sy-g/2,g,g);
+    ctx.fillStyle=`rgb(${rgb})`;
+    ctx.beginPath();ctx.arc(p.sx,p.sy,2.4*p.persp*lscale,0,Math.PI*2);ctx.fill();
+  }
+  // draw a chain up to fractional segment count `reveal`
+  function drawChain(nodes,reveal,rgb,spr){
+    ctx.globalCompositeOperation='lighter';
+    const full=Math.floor(reveal), frac=reveal-full;
+    for(let i=0;i<full && i<nodes.length-1;i++) drawSeg(nodes[i],nodes[i+1],rgb,1);
+    if(full<nodes.length-1 && frac>0) drawSeg(nodes[full],nodeAt(nodes,full+frac),rgb,1);
+    const last=Math.min(full,nodes.length-1);
+    for(let i=0;i<=last;i++) drawNode(nodes[i],rgb,spr,11);
+    if(frac>0 && full<nodes.length-1) drawNode(nodeAt(nodes,full+frac),rgb,whiteSprite,13);
+    ctx.globalCompositeOperation='source-over';
+  }
+  function clusterGlow(cl,rgb,amt){
+    if(amt<=0.001)return;
+    const p=project(cl);
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=amt*(0.35+0.18*Math.sin(performance.now()*0.004));
+    ctx.strokeStyle=`rgb(${rgb})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(p.sx,p.sy,cl.r*p.persp*zoom*0.9+12,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  }
+
+  let startT=performance.now();
+
+  function frame(now){
+    const tr=(now-startT)/1000;          // rotation clock — never clamps
+    let t=tr;                            // narrative clock — clamps at DUR
+    if(t>=DUR){t=DUR;}
+    barEl.style.width=(t/DUR*100)+'%';
+
+    let ai=0; for(let i=0;i<ACTS.length;i++) if(t>=ACTS[i].t0) ai=i;
+    const Aa=ACTS[ai], lp=clamp((t-Aa.t0)/(Aa.t1-Aa.t0),0,1);
+    setAct(ai);
+
+    // gentle rotation, slowed ~half (uses rotation clock so it keeps going at the end)
+    yaw=0.045*tr;
+    pit=0.30+0.05*Math.sin(tr*0.12);
+    cosY=Math.cos(yaw);sinY=Math.sin(yaw);cosP=Math.cos(pit);sinP=Math.sin(pit);
+
+    // camera schedule: hold wide → zoom into search A → zoom back out across B + convergence
+    let zoomMul=1, panAmt=0, camTarget=ORIGIN;
+    if(ai===3){ const e=easeIO(clamp(lp/0.4,0,1)); zoomMul=lerp(1.0,2.1,e); panAmt=e;     camTarget=lineAc; }
+    else if(ai===4){ const e=easeIO(lp);          zoomMul=lerp(2.1,1.0,e); panAmt=1-e;   camTarget=lineAc; }
+    else if(ai===5){ const e=easeIO(lp);          zoomMul=lerp(1.0,0.82,e); panAmt=0;     camTarget=ORIGIN; }
+    zoom=(Math.min(W,H)*0.34/600)*zoomMul*(1+0.02*Math.sin(tr*0.12));
+    pscale=Math.pow(zoomMul,0.7); lscale=Math.pow(zoomMul,0.85);
+    panX=0;panY=0;
+    if(panAmt>0){ const tp=rawProject(camTarget); panX=(W/2-tp.sx)*panAmt; panY=(H/2-tp.sy)*panAmt; }
+
+    // state factors
+    let clusterT=0, colorReveal=0, fieldAlpha=1, buildP=0;
+    if(ai===0){ buildP=easeOut(lp); }
+    else if(ai===1){ buildP=1; }
+    else if(ai===2){ buildP=1; clusterT=easeIO(lp); colorReveal=clamp((lp-0.1)/0.8,0,1); }
+    else { buildP=1; clusterT=1; colorReveal=1; }
+
+    // ---- background ----
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    const bg=ctx.createRadialGradient(W*0.5,H*0.47,0,W*0.5,H*0.47,Math.max(W,H)*0.78);
+    bg.addColorStop(0,'#0a0d1c');bg.addColorStop(.55,'#06070f');bg.addColorStop(1,'#020309');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(const s of stars){const tw=0.5+0.5*Math.sin(now*0.001+s.tw);
+      ctx.globalAlpha=s.a*(0.25+0.45*tw)*0.6;ctx.fillStyle='#cfe0ff';ctx.fillRect(s.x*W,s.y*H,s.s,s.s);}
+    ctx.restore();
+
+    // ---- point cloud ----
+    const buildThresh=lerp(0.12,1.0,buildP); // fraction visible during scale build
+    ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<N;i++){
+      const p=pts[i];
+      let vis=1;
+      if(ai===0){ if(p.spawn>buildThresh)continue; vis=clamp((buildThresh-p.spawn)*8,0,1); }
+      const wx=lerp(p.sx,p.hx,clusterT), wy=lerp(p.sy,p.hy,clusterT), wz=lerp(p.sz,p.hz,clusterT);
+      const pr=project({x:wx,y:wy,z:wz});
+      if(pr.sx<-40||pr.sx>W+40||pr.sy<-40||pr.sy>H+40)continue;
+      const depth=clamp((pr.persp-0.72)/0.78,0,1);          // 0 far .. 1 near
+      const tw=0.8+0.2*Math.sin(now*0.002+p.tw);
+      let a=p.base*tw*vis*(0.45+0.7*depth);
+
+      // converge act: dim everything except A/B clusters + path + C as it's reached
+      if(ai>=3){
+        // keep full brightness; later acts handled by line overlay. mild global calm:
+        a*=0.92;
+      }
+      const sz=p.sz0*6.0*pr.persp*pscale;
+      // color reveal blend
+      if(colorReveal<0.999){
+        ctx.globalAlpha=clamp(a*(1-colorReveal),0,1);
+        ctx.drawImage(coolSprite,pr.sx-sz/2,pr.sy-sz/2,sz,sz);
+        if(colorReveal>0){ctx.globalAlpha=clamp(a*colorReveal,0,1);
+          ctx.drawImage(p.sprite,pr.sx-sz/2,pr.sy-sz/2,sz,sz);}
+      } else {
+        ctx.globalAlpha=clamp(a,0,1);
+        ctx.drawImage(p.sprite,pr.sx-sz/2,pr.sy-sz/2,sz,sz);
+      }
+    }
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+
+    // ---- search lines ----
+    if(ai===3){
+      const r=easeIO(lp)*(lineA.length-1);
+      drawChain(lineA,r,'255,210,122',goldSprite);
+      clusterGlow(A,'255,210,122',easeOut(lp)*0.8);
+    }
+    else if(ai===4){
+      drawChain(lineA,lineA.length-1,'255,210,122',goldSprite);
+      clusterGlow(A,'255,210,122',0.5);
+      const r=easeIO(lp)*(lineB.length-1);
+      drawChain(lineB,r,'122,208,255',cyanSprite);
+      clusterGlow(B,'122,208,255',easeOut(lp)*0.8);
+    }
+    else if(ai===5){
+      // both lines fully drawn, dimmer
+      drawChain(lineA,lineA.length-1,'255,210,122',goldSprite);
+      drawChain(lineB,lineB.length-1,'122,208,255',cyanSprite);
+      // phase 1: converging segments meet at conv
+      const sub1=clamp(lp/0.30,0,1), sub2=clamp((lp-0.30)/0.70,0,1);
+      ctx.globalCompositeOperation='lighter';
+      const aMid={x:lerp(aFrontier.x,conv.x,easeIO(sub1)),y:lerp(aFrontier.y,conv.y,easeIO(sub1)),z:lerp(aFrontier.z,conv.z,easeIO(sub1))};
+      const bMid={x:lerp(bFrontier.x,conv.x,easeIO(sub1)),y:lerp(bFrontier.y,conv.y,easeIO(sub1)),z:lerp(bFrontier.z,conv.z,easeIO(sub1))};
+      drawSeg(aFrontier,aMid,'255,210,122',1);
+      drawSeg(bFrontier,bMid,'122,208,255',1);
+      ctx.globalCompositeOperation='source-over';
+      if(sub1>=0.55) drawNode(conv,'255,242,210',whiteSprite,15);
+      // phase 2: merged trajectory grows toward C
+      if(sub2>0){
+        const r=easeIO(sub2)*(mergedToC.length-1);
+        drawChain(mergedToC,r,'255,242,210',whiteSprite);
+        clusterGlow(C,'255,242,210',easeOut(sub2)*0.9);
+      }
+    }
+
+    // ---- overlays ----
+    if(ai===0){
+      counterEl.classList.add('show');
+      const v=Math.round(lerp(0,1e10,easeOut(lp)));
+      bignumEl.textContent=v.toLocaleString('en-US');
+    } else counterEl.classList.remove('show');
+    legendEl.classList.toggle('show', ai>=3);
+
+    requestAnimationFrame(frame);
+  }
+
+  document.getElementById('replay').onclick=()=>{startT=performance.now();curAct=-1;};
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

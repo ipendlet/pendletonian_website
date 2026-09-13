@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%2304050c%27/%3E%3Ccircle cx=%2724%27 cy=%2726%27 r=%277%27 fill=%27%235b9dff%27/%3E%3Ccircle cx=%2742%27 cy=%2738%27 r=%275%27 fill=%27%23ff5b6e%27/%3E%3Ccircle cx=%2746%27 cy=%2720%27 r=%274%27 fill=%27%23ffd27a%27/%3E%3C/svg%3E">
+<title>Constellation Atlas — Chemical Space</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syncopate:wght@400;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#04050d; font-family:'Space Mono',monospace; color:#e8ecff; }
+  #stage { position:fixed; inset:0; }
+  canvas { display:block; }
+  #vignette { position:fixed; inset:0; pointer-events:none; z-index:5;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(3,4,11,0.7) 100%); }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  .corner { position:absolute; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(180,195,255,0.5); }
+  .corner.tl { top:22px; left:26px; } .corner.tr { top:22px; right:26px; text-align:right; }
+  .corner.bl { bottom:22px; left:26px; }
+  #title { font-family:'Syncopate',sans-serif; font-weight:700; font-size:13px; letter-spacing:6px; color:#cdd6ff; margin-bottom:4px; }
+  #subtitle { font-size:9px; letter-spacing:3px; color:rgba(150,165,230,0.5); }
+  #caption { position:absolute; bottom:74px; left:50%; transform:translateX(-50%); text-align:center; width:90%; max-width:720px; opacity:0; transition:opacity 0.8s ease; }
+  #caption.show { opacity:1; }
+  #scene-label { font-family:'Syncopate',sans-serif; font-size:11px; letter-spacing:5px; color:rgba(150,165,230,0.75); margin-bottom:10px; }
+  #scene-headline { font-family:'Syncopate',sans-serif; font-weight:700; font-size:clamp(18px,3vw,30px); letter-spacing:3px; color:#fff; text-shadow:0 0 30px rgba(120,160,255,0.45); }
+  .region-tag { position:absolute; transform:translate(-50%,-50%); pointer-events:none; text-align:center; z-index:8; opacity:0; transition:opacity 0.6s ease; }
+  .region-tag.show { opacity:1; }
+  .region-tag .num { font-family:'Syncopate',sans-serif; font-weight:700; font-size:clamp(15px,2.3vw,25px); letter-spacing:1px; text-shadow:0 0 24px currentColor; }
+  .region-tag .lbl { font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-top:4px; opacity:0.8; }
+  .region-tag .sub { font-size:7.5px; letter-spacing:2px; text-transform:uppercase; margin-top:2px; opacity:0.55; }
+  #controls { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:5px; z-index:20; pointer-events:auto;
+    background:rgba(8,12,28,0.7); backdrop-filter:blur(12px); border:1px solid rgba(120,150,255,0.15); border-radius:40px; padding:7px 10px; flex-wrap:wrap; justify-content:center; max-width:95vw; }
+  .step-btn { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.5px; background:transparent; color:rgba(180,195,255,0.55);
+    border:1px solid transparent; border-radius:24px; padding:7px 12px; cursor:pointer; transition:all 0.3s ease; text-transform:uppercase; white-space:nowrap; }
+  .step-btn:hover { color:#fff; background:rgba(120,150,255,0.1); }
+  .step-btn.active { color:#fff; background:rgba(120,150,255,0.18); border-color:rgba(120,150,255,0.4); box-shadow:0 0 20px rgba(120,150,255,0.25); }
+  #hint { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:10px; letter-spacing:3px; color:rgba(150,165,230,0.4); text-transform:uppercase; pointer-events:none; z-index:9; opacity:0; transition:opacity 1s ease; }
+  #hint.show { opacity:1; }
+  @media (max-width:700px) { #caption { bottom:130px; } .corner.bl { display:none; } }
+</style>
+</head>
+<body>
+<a href="./" style="position:fixed;top:72px;left:26px;z-index:40;font:11px/1 'IBM Plex Mono','Space Mono',monospace;letter-spacing:.25em;text-transform:uppercase;color:rgba(180,195,255,.6);text-decoration:none;border:1px solid rgba(150,170,220,.2);padding:8px 14px;border-radius:999px;background:rgba(4,5,12,.5)">← pendletonian.com</a>
+<div id="stage"></div>
+<div id="vignette"></div>
+<div id="hud">
+  <div class="corner tl"><div id="title">CHEMICAL&nbsp;SPACE</div><div id="subtitle">CONSTELLATION&nbsp;ATLAS&nbsp;//&nbsp;ORDERS&nbsp;OF&nbsp;MAGNITUDE</div></div>
+  <div class="corner tr">REV&nbsp;02<br><span id="coord">— · —</span></div>
+  <div class="corner bl" id="readout">DRAG&nbsp;TO&nbsp;ROTATE&nbsp;·&nbsp;SCROLL&nbsp;TO&nbsp;ZOOM</div>
+  <div id="caption"><div id="scene-label">MARKER 01</div><div id="scene-headline">ACCESSIBLE CHEMICAL SPACE</div></div>
+
+  <div class="region-tag" id="tag-blue" style="color:#5b9dff;"><div class="num">~10<sup>10</sup></div><div class="lbl">Enumerated Virtual Space</div></div>
+  <div class="region-tag" id="tag-red" style="color:#ff5b6e;"><div class="num">~10<sup>6</sup></div><div class="lbl">Readily Available</div><div class="sub">Synthesized &amp; Easily Purchasable</div></div>
+  <div class="region-tag" id="tag-green" style="color:#4dffa3;"><div class="num">~10<sup>3</sup></div><div class="lbl">Literature Data</div></div>
+  <div class="region-tag" id="tag-green-sub" style="color:#d6ffb0;"><div class="num">~10<sup>2</sup></div><div class="lbl">Validated Hits</div></div>
+  <div class="region-tag" id="tag-total" style="color:#cdd6ff;"><div class="num">~10<sup>11</sup></div><div class="lbl">Accessible Chemical Space</div></div>
+  <div class="region-tag" id="tag-final" style="color:#fff8d6;"><div class="num">★ TARGET</div><div class="lbl">Convergent Candidate</div></div>
+  <div id="hint" class="show">Initializing constellation…</div>
+</div>
+
+<div id="controls">
+  <button class="step-btn active" data-step="0">01 · Universe</button>
+  <button class="step-btn" data-step="1">02 · Two Spaces</button>
+  <button class="step-btn" data-step="2">02b · Populate</button>
+  <button class="step-btn" data-step="3">03 · Literature</button>
+  <button class="step-btn" data-step="4">03b · Subset</button>
+  <button class="step-btn" data-step="5">04 · Search</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const stage=document.getElementById('stage');
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x04050d,0.0007);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,6000);
+camera.position.set(0,0,640);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+stage.appendChild(renderer.domElement);
+
+function makeSprite(){
+  const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
+  const grd=g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,'rgba(255,255,255,1)'); grd.addColorStop(0.25,'rgba(255,255,255,0.9)');
+  grd.addColorStop(0.55,'rgba(255,255,255,0.3)'); grd.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=grd; g.fillRect(0,0,64,64);
+  const t=new THREE.Texture(c); t.needsUpdate=true; return t;
+}
+const sprite=makeSprite();
+
+// ---- value-noise field for stochastic, non-uniform density ----
+function hash(x,y,z){ let n=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453; return n-Math.floor(n); }
+function noise3(x,y,z){
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z);
+  const xf=x-xi,yf=y-yi,zf=z-zi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),w=zf*zf*(3-2*zf);
+  function lerp(a,b,t){return a+(b-a)*t;}
+  const c000=hash(xi,yi,zi),c100=hash(xi+1,yi,zi),c010=hash(xi,yi+1,zi),c110=hash(xi+1,yi+1,zi);
+  const c001=hash(xi,yi,zi+1),c101=hash(xi+1,yi,zi+1),c011=hash(xi,yi+1,zi+1),c111=hash(xi+1,yi+1,zi+1);
+  return lerp(lerp(lerp(c000,c100,u),lerp(c010,c110,u),v),lerp(lerp(c001,c101,u),lerp(c011,c111,u),w),w);
+}
+
+const SPHERE_R=300;
+function spherePoint(r){
+  const u=Math.random(),v=Math.random();
+  const theta=2*Math.PI*u,phi=Math.acos(2*v-1);
+  const rr=r*(0.5+0.5*Math.cbrt(Math.random()));
+  return new THREE.Vector3(rr*Math.sin(phi)*Math.cos(theta),rr*Math.sin(phi)*Math.sin(theta),rr*Math.cos(phi));
+}
+
+// ---- BLOBULAR stochastic cluster: irregular axes + noise-rejected sampling ----
+function blobPoints(center, baseR, n, seed){
+  const arr=[];
+  // anisotropic axes -> non-spherical blob
+  const ax=baseR*(0.75+Math.random()*0.7), ay=baseR*(0.75+Math.random()*0.7), az=baseR*(0.75+Math.random()*0.7);
+  // random rotation basis
+  const rot=new THREE.Euler(Math.random()*6,Math.random()*6,Math.random()*6);
+  const m=new THREE.Matrix4().makeRotationFromEuler(rot);
+  let tries=0;
+  while(arr.length<n && tries<n*40){
+    tries++;
+    // sample within unit ball, biased outward a touch for lumpiness
+    const u=Math.random(),vv=Math.random(); const th=2*Math.PI*u, ph=Math.acos(2*vv-1);
+    const rad=Math.cbrt(Math.random());
+    let p=new THREE.Vector3(rad*Math.sin(ph)*Math.cos(th)*ax, rad*Math.sin(ph)*Math.sin(th)*ay, rad*Math.cos(ph)*az);
+    // stochastic rejection by noise field -> clumpy, non-uniform
+    const nv=noise3(p.x*0.04+seed, p.y*0.04+seed, p.z*0.04+seed);
+    if(nv < 0.35 + Math.random()*0.25) continue;
+    p.applyMatrix4(m); p.add(center);
+    arr.push(p);
+  }
+  // ensure we hit n
+  while(arr.length<n){ const p=blobPoints(center,baseR,1,seed+1)[0]; arr.push(p); }
+  return arr;
+}
+
+// Region centers — blue & red overlap at edges; green near red but separated
+const BLUE_C =new THREE.Vector3(-70, 40, 60);
+const RED_C  =new THREE.Vector3(120,-30,110);   // blue & red blobs are sized to overlap edges
+const GREEN_C=new THREE.Vector3(205,-95,150);   // close to red edge, no overlap
+
+// ---- BRIGHT BACKDROP universe ----
+const N_BG=7000;
+const bgGeo=new THREE.BufferGeometry();
+const bgPos=new Float32Array(N_BG*3), bgCol=new Float32Array(N_BG*3);
+for(let i=0;i<N_BG;i++){
+  const p=spherePoint(SPHERE_R); bgPos[i*3]=p.x;bgPos[i*3+1]=p.y;bgPos[i*3+2]=p.z;
+  const b=0.7+Math.random()*0.5;   // brighter
+  bgCol[i*3]=b*0.82;bgCol[i*3+1]=b*0.88;bgCol[i*3+2]=b;
+}
+bgGeo.setAttribute('position',new THREE.BufferAttribute(bgPos,3));
+bgGeo.setAttribute('color',new THREE.BufferAttribute(bgCol,3));
+const bgMat=new THREE.PointsMaterial({size:4.2,map:sprite,vertexColors:true,transparent:true,opacity:1.0,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+scene.add(new THREE.Points(bgGeo,bgMat));
+
+// extra mid-layer bright field for richness
+const N_MID=3500;
+const midGeo=new THREE.BufferGeometry(); const midPos=new Float32Array(N_MID*3);
+for(let i=0;i<N_MID;i++){const p=spherePoint(SPHERE_R*1.5);midPos[i*3]=p.x;midPos[i*3+1]=p.y;midPos[i*3+2]=p.z;}
+midGeo.setAttribute('position',new THREE.BufferAttribute(midPos,3));
+const midMat=new THREE.PointsMaterial({size:2.6,map:sprite,color:0x9fb4ff,transparent:true,opacity:0.8,depthWrite:false,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Points(midGeo,midMat));
+
+// deep dust
+const N_DUST=3000; const dustGeo=new THREE.BufferGeometry(); const dustPos=new Float32Array(N_DUST*3);
+for(let i=0;i<N_DUST;i++){const p=spherePoint(SPHERE_R*2.7);dustPos[i*3]=p.x;dustPos[i*3+1]=p.y;dustPos[i*3+2]=p.z;}
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+scene.add(new THREE.Points(dustGeo,new THREE.PointsMaterial({size:1.8,color:0x5a6aa0,transparent:true,opacity:0.6,depthWrite:false,blending:THREE.AdditiveBlending})));
+
+// ---- region groups w/ progressive reveal (count attribute) ----
+function buildGroup(center,baseR,n,color,size,seed){
+  const pts=blobPoints(center,baseR,n,seed);
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(n*3);
+  pts.forEach((p,i)=>{pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;});
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setDrawRange(0,n);
+  const mat=new THREE.PointsMaterial({size,map:sprite,color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  const obj=new THREE.Points(geo,mat); scene.add(obj);
+  return {obj,mat,geo,n,center:center.clone(),pts,reveal:n};
+}
+// Blue: big blob, fewer bright pts. Red: smaller blob, more pts. Sized so blue & red edges overlap.
+const blue =buildGroup(BLUE_C,115,140,0x5b9dff,6.2,1.3);
+const red  =buildGroup(RED_C,70,300,0xff5b6e,5.0,4.7);
+const green=buildGroup(GREEN_C,34,90,0x4dffa3,5.6,8.1);
+const greenSub=buildGroup(GREEN_C,18,20,0xd6ffb0,8.2,8.9);
+
+function setReveal(grp,frac){ grp.geo.setDrawRange(0,Math.max(1,Math.floor(grp.n*frac))); }
+
+// ---- blobular halos (irregular ring via scaled torus-ish line loop) ----
+function makeHalo(center,radius,color){
+  const seg=80; const pts=[];
+  for(let i=0;i<=seg;i++){ const a=i/seg*Math.PI*2;
+    const wob=1+0.18*Math.sin(a*3+center.x)+0.1*Math.sin(a*5+center.y);
+    pts.push(new THREE.Vector3(Math.cos(a)*radius*wob,Math.sin(a)*radius*wob,0)); }
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  const m=new THREE.LineBasicMaterial({color,transparent:true,opacity:0,blending:THREE.AdditiveBlending});
+  const line=new THREE.LineLoop(g,m); line.position.copy(center); scene.add(line);
+  return {line,m,center:center.clone()};
+}
+const haloBlue=makeHalo(BLUE_C,150,0x5b9dff);
+const haloRed=makeHalo(RED_C,98,0xff5b6e);
+const haloGreen=makeHalo(GREEN_C,48,0x4dffa3);
+
+// ---- search bridges ----
+function makeBridge(a,b,color){
+  const mid=a.clone().add(b).multiplyScalar(0.5).add(new THREE.Vector3((Math.random()-0.5)*70,(Math.random()-0.5)*70,(Math.random()-0.5)*70));
+  const curve=new THREE.QuadraticBezierCurve3(a,mid,b);
+  const g=new THREE.BufferGeometry().setFromPoints(curve.getPoints(44));
+  const m=new THREE.LineBasicMaterial({color,transparent:true,opacity:0,blending:THREE.AdditiveBlending});
+  const line=new THREE.Line(g,m); scene.add(line); return {line,m};
+}
+const bridges=[makeBridge(BLUE_C,RED_C,0x8a7bff),makeBridge(RED_C,GREEN_C,0xa8ff7b),makeBridge(BLUE_C,GREEN_C,0x7bd0ff)];
+
+const TARGET=GREEN_C.clone().add(new THREE.Vector3(6,-4,8));
+const targetGeo=new THREE.BufferGeometry().setFromPoints([TARGET]);
+const targetMat=new THREE.PointsMaterial({size:22,map:sprite,color:0xfff8d6,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
+scene.add(new THREE.Points(targetGeo,targetMat));
+
+// ---- camera orbit ----
+const control={target:new THREE.Vector3(0,0,0),dist:640,targetDist:640,azim:0.4,targetAzim:0.4,elev:0.15,targetElev:0.15,autoSpin:true};
+function updateCamera(){
+  control.dist+=(control.targetDist-control.dist)*0.07;
+  control.azim+=(control.targetAzim-control.azim)*0.07;
+  control.elev+=(control.targetElev-control.elev)*0.07;
+  const t=control.target;
+  camera.position.set(
+    t.x+control.dist*Math.cos(control.elev)*Math.sin(control.azim),
+    t.y+control.dist*Math.sin(control.elev),
+    t.z+control.dist*Math.cos(control.elev)*Math.cos(control.azim));
+  camera.lookAt(t);
+}
+let dragging=false,px=0,py=0;
+renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;control.autoSpin=false;});
+addEventListener('pointerup',()=>dragging=false);
+addEventListener('pointermove',e=>{if(!dragging)return;control.targetAzim-=(e.clientX-px)*0.005;control.targetElev+=(e.clientY-py)*0.005;control.targetElev=Math.max(-1.2,Math.min(1.2,control.targetElev));px=e.clientX;py=e.clientY;});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();control.targetDist*=(1+e.deltaY*0.001);control.targetDist=Math.max(35,Math.min(1500,control.targetDist));},{passive:false});
+
+// ---- animated state ----
+const A={bg:1.0,blue:0,red:0,green:0,greenSub:0,haloBlue:0,haloRed:0,haloGreen:0,bridge:0,target:0,blueRev:1,redRev:1,greenRev:1};
+const Atar=Object.assign({},A);
+function lerpState(){
+  for(const k in A) A[k]+=(Atar[k]-A[k])*0.06;
+  bgMat.opacity=A.bg; midMat.opacity=A.bg*0.8;
+  blue.mat.opacity=A.blue; red.mat.opacity=A.red; green.mat.opacity=A.green; greenSub.mat.opacity=A.greenSub;
+  haloBlue.m.opacity=A.haloBlue*0.55; haloRed.m.opacity=A.haloRed*0.55; haloGreen.m.opacity=A.haloGreen*0.55;
+  bridges.forEach(b=>b.m.opacity=A.bridge*0.7); targetMat.opacity=A.target;
+  setReveal(blue,A.blueRev); setReveal(red,A.redRev); setReveal(green,A.greenRev);
+}
+
+const tagEls={blue:tagEl('tag-blue'),red:tagEl('tag-red'),green:tagEl('tag-green'),greenSub:tagEl('tag-green-sub'),total:tagEl('tag-total'),final:tagEl('tag-final')};
+function tagEl(id){return document.getElementById(id);}
+const caption=document.getElementById('caption'),sceneLabel=document.getElementById('scene-label'),sceneHeadline=document.getElementById('scene-headline');
+
+const STEPS=[
+  {label:'MARKER 01',head:'ACCESSIBLE CHEMICAL SPACE',
+   cam:{dist:660,azim:0.4,elev:0.15,target:[0,0,0]},
+   set:{bg:1.0,blue:0,red:0,green:0,greenSub:0,haloBlue:0,haloRed:0,haloGreen:0,bridge:0,target:0,blueRev:1,redRev:1,greenRev:1},
+   tags:['total']},
+  {label:'MARKER 02',head:'TWO SPACES EMERGE',
+   cam:{dist:560,azim:-0.05,elev:0.05,target:[20,5,85]},
+   set:{bg:0.6,blue:1,red:1,green:0,greenSub:0,haloBlue:1,haloRed:1,haloGreen:0,bridge:0,target:0,blueRev:0.25,redRev:0.25,greenRev:0},
+   tags:['blue','red']},
+  {label:'MARKER 02b',head:'POPULATING THE SPACES',
+   cam:{dist:520,azim:-0.18,elev:0.0,target:[30,0,90]},
+   set:{bg:0.55,blue:1,red:1,green:0,greenSub:0,haloBlue:1,haloRed:1,haloGreen:0,bridge:0,target:0,blueRev:1,redRev:1,greenRev:0},
+   tags:['blue','red']},
+  {label:'MARKER 03',head:'LITERATURE DATA',
+   cam:{dist:340,azim:-0.4,elev:-0.12,target:[180,-80,140]},
+   set:{bg:0.4,blue:0.4,red:0.7,green:1,greenSub:0,haloBlue:0.3,haloRed:0.6,haloGreen:1,bridge:0,target:0,blueRev:1,redRev:1,greenRev:0.3},
+   tags:['green','red']},
+  {label:'MARKER 03b',head:'VALIDATED SUBSET',
+   cam:{dist:240,azim:-0.5,elev:-0.1,target:[200,-92,148]},
+   set:{bg:0.4,blue:0.3,red:0.6,green:1,greenSub:1,haloBlue:0.2,haloRed:0.5,haloGreen:1,bridge:0,target:0,blueRev:1,redRev:1,greenRev:1},
+   tags:['green','greenSub']},
+  {label:'MARKER 04',head:'THE SEARCH CONVERGES',
+   cam:{dist:180,azim:-0.55,elev:-0.05,target:[205,-95,150]},
+   set:{bg:0.6,blue:1,red:1,green:1,greenSub:1,haloBlue:0.4,haloRed:0.4,haloGreen:0.4,bridge:1,target:1,blueRev:1,redRev:1,greenRev:1},
+   tags:['final']}
+];
+function applyStep(i){
+  const s=STEPS[i]; Object.assign(Atar,s.set);
+  control.targetDist=s.cam.dist; control.targetAzim=s.cam.azim; control.targetElev=s.cam.elev; control.target.set(...s.cam.target); control.autoSpin=true;
+  sceneLabel.textContent=s.label; sceneHeadline.textContent=s.head; caption.classList.add('show');
+  for(const k in tagEls) tagEls[k].classList.remove('show');
+  s.tags.forEach(t=>tagEls[t].classList.add('show'));
+  document.querySelectorAll('.step-btn').forEach(b=>b.classList.toggle('active',+b.dataset.step===i));
+}
+document.querySelectorAll('.step-btn').forEach(b=>b.addEventListener('click',()=>applyStep(+b.dataset.step)));
+
+const _v=new THREE.Vector3();
+function project(pos3,el,offsetY=-60){_v.copy(pos3).project(camera);const x=(_v.x*0.5+0.5)*innerWidth;const y=(-_v.y*0.5+0.5)*innerHeight+offsetY;el.style.left=x+'px';el.style.top=y+'px';el.style.display=_v.z>1?'none':'';}
+
+const coord=document.getElementById('coord'),hint=document.getElementById('hint');
+let frame=0;
+function animate(){
+  requestAnimationFrame(animate); frame++;
+  if(control.autoSpin&&!dragging) control.targetAzim+=0.0009;
+  bgMat.size=4.0+Math.sin(frame*0.03)*0.6;
+  targetMat.size=18+Math.sin(frame*0.08)*8;
+  const hp=1+Math.sin(frame*0.04)*0.04;
+  [haloBlue,haloRed,haloGreen].forEach(h=>{h.line.scale.setScalar(hp);h.line.lookAt(camera.position);});
+  lerpState(); updateCamera();
+  project(BLUE_C,tagEls.blue,-110); project(RED_C,tagEls.red,-80);
+  project(GREEN_C,tagEls.green,-55); project(GREEN_C.clone().add(new THREE.Vector3(0,-55,0)),tagEls.greenSub,0);
+  project(new THREE.Vector3(0,SPHERE_R*0.95,0),tagEls.total,0); project(TARGET,tagEls.final,-50);
+  coord.textContent=`${control.azim.toFixed(2)} · ${control.elev.toFixed(2)} · z${control.dist.toFixed(0)}`;
+  renderer.render(scene,camera);
+}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+setTimeout(()=>{hint.classList.remove('show');applyStep(0);},1400);
+</script>
+</body>
+</html>

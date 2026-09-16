@@ -92,6 +92,16 @@ ol.refs li::marker { color: var(--dim); }
 .duo-head span:last-child { font-family: var(--mono); font-style: normal; font-size: 10px; color: var(--gold); }
 @media (max-width: 560px) { .duo-row span { font-size: 13px; padding: 12px 14px; } .duo-row span:last-child { font-size: 14px; } }
 
+/* approach */
+.approach { margin-top: 90px; scroll-margin-top: 40px; }
+.principles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 30px; }
+@media (min-width: 1000px) { .principles { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 560px) { .principles { grid-template-columns: 1fr; } }
+.principles .card:hover { transform: none; border-color: var(--line); }
+.principles .k { color: var(--gold); }
+.closing { margin-top: 34px; font-family: var(--serif); font-style: italic; font-size: clamp(19px, 2.4vw, 25px); line-height: 1.4; color: #d6def5; max-width: 40ch; }
+.approach + .grid { margin-top: 70px; }
+
 footer { border-top: 1px solid var(--line); padding: 30px clamp(18px, 5vw, 40px); font-size: 12px; color: var(--dim);
   display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 footer a { color: var(--dim); }

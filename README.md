@@ -3,7 +3,7 @@
 Static personal site for Ian M. Pendleton, served by GitHub Pages from
 [`ipendlet/pendletonian_website`](https://github.com/ipendlet/pendletonian_website) (branch `main`, root folder).
 There is no build step: edit the HTML/CSS, commit, push to `main`, and Pages redeploys in about a minute.
-
+ 
 ```
 index.html                         home: hero, "Who am I?", links
 cv/index.html                      curriculum vitae
